@@ -1,0 +1,171 @@
+.map-legend {
+    position: absolute;
+    bottom: 24px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 1002;
+    min-width: 140px;
+    pointer-events: auto;
+    transition: all 0.3s ease;
+}
+
+.comparison-mode .map-legend {
+    transform: scale(0.85);
+    transform-origin: bottom left;
+    bottom: 12px;
+    left: 12px;
+}
+
+.legend-title {
+    margin: 0 0 10px 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 4px;
+}
+
+.legend-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.legend-item.interactive {
+    cursor: pointer;
+    padding: 4px 8px;
+    margin: 0 -8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.legend-item.interactive:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.legend-checkbox {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: white;
+}
+
+.legend-checkbox.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.checkmark {
+    width: 8px;
+    height: 4px;
+    border-left: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(-45deg) translateY(-1px);
+}
+
+.legend-color-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid white;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.legend-label {
+    font-size: 0.85rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.legend-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.legend-subtitle {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+.bubble-scale {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 0;
+}
+
+.choropleth-box {
+    border-radius: 2px !important;
+    width: 14px !important;
+    height: 14px !important;
+}
+
+.bubble-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+}
+
+.bubble-circle {
+    border-radius: 50%;
+    background: #2f855a;
+    opacity: 0.8;
+    border: 2px solid white;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.legend-bubble {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2f855a;
+    opacity: 0.6;
+    border: 1px solid white;
+}
+
+.legend-boundary {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #4a5568;
+    background: rgba(47, 133, 90, 0.1);
+    border-radius: 2px;
+}
+
+.legend-icon-wrapper {
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
