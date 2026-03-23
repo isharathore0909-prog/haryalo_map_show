@@ -61,7 +61,7 @@ export const getPlantationPoints = async (req: Request, res: Response) => {
 export const getSummaryStats = async (req: Request, res: Response) => {
     try {
         const summary = await plantationService.getSummaryStats(req.query as any);
-        res.json(serializeBigInt(summary));
+        res.json(serializeBigInt(summary[0]));
     } catch (error) {
         console.error('Error fetching summary stats:', error);
         res.status(500).json({ error: 'Internal server error' });

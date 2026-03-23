@@ -386,18 +386,18 @@
 }
 
 .bar-col.blk-col {
-    background: #132f20;
-    /* Evergreen for Block */
+    background: #059669;
+    /* Vibrant Emerald for Block */
 }
 
 .bar-col.fal-col {
-    background: #4a401d;
-    /* Bark for Fal Vatika */
+    background: #d97706;
+    /* Vibrant Amber for Fal Vatika */
 }
 
 .bar-col.miy-col {
-    background: #cbb27a;
-    /* Amber for Miyawaki */
+    background: #2563eb;
+    /* Vibrant Blue for Miyawaki */
 }
 
 .bar-col.full {
@@ -461,15 +461,15 @@
 }
 
 .legend-blob.blk .swatch {
-    background: #132f20;
+    background: #059669;
 }
 
 .legend-blob.fal .swatch {
-    background: #4a401d;
+    background: #d97706;
 }
 
 .legend-blob.miy .swatch {
-    background: #cbb27a;
+    background: #2563eb;
 }
 
 /* --- AUDIT VERIFICATION --- */
