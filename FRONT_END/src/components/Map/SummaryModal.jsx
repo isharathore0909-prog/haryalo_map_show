@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Map as MapIcon, Building, CheckCircle, Info, ShieldCheck, Timer, FileText, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Map as MapIcon, Building, CheckCircle, Info, FileText, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import './SummaryModal.css';
 
 const SummaryModal = ({ isOpen, onClose, summary, stats, regionName }) => {
@@ -186,44 +186,6 @@ const SummaryModal = ({ isOpen, onClose, summary, stats, regionName }) => {
                             )}
                         </div>
 
-                        {/* Audit and Verification Section */}
-                        <div className="report-section formal border-blue">
-                            <div className="section-title">
-                                <ShieldCheck size={20} className="section-icon" />
-                                <h3>Audit & Verification Status</h3>
-                            </div>
-                            <div className="audit-card">
-                                {(() => {
-                                    const verified = summary.verified_count || 0;
-                                    const total = summary.total_sites || 1;
-                                    const percent = ((verified / total) * 100).toFixed(1);
-                                    return (
-                                        <>
-                                            <div className="audit-header">
-                                                <span className="audit-title">GEOSPATIAL VERIFICATION SCORE</span>
-                                                <span className="audit-percent">{percent}%</span>
-                                            </div>
-                                            <div className="audit-progress-track">
-                                                <div
-                                                    className="audit-progress-fill"
-                                                    style={{ width: `${percent}%` }}
-                                                ></div>
-                                            </div>
-                                            <div className="audit-summary-row">
-                                                <div className="audit-pill success">
-                                                    <ShieldCheck size={14} />
-                                                    <span>{verified.toLocaleString()} SITES VERIFIED</span>
-                                                </div>
-                                                <div className="audit-pill warning">
-                                                    <Timer size={14} />
-                                                    <span>{(total - verified).toLocaleString()} SITES PENDING AUDIT</span>
-                                                </div>
-                                            </div>
-                                        </>
-                                    );
-                                })()}
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

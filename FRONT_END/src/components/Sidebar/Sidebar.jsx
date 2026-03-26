@@ -1,5 +1,5 @@
 import React from 'react'
-import { Map as MapIcon, ChevronLeft, ChevronRight, Filter, CheckCircle, Building, Landmark } from 'lucide-react'
+import { Map as MapIcon, ChevronLeft, ChevronRight, Filter, Building, Landmark } from 'lucide-react'
 import StatsPanel from './StatsPanel'
 import SelectFilter from './Filters/SelectFilter'
 import YearRangeFilter from './Filters/YearRangeFilter'
@@ -117,18 +117,6 @@ const Sidebar = ({
                         )}
                     </div>
 
-                    <SelectFilter
-                        title="Verification Status"
-                        icon={CheckCircle}
-                        value={filters.status}
-                        onChange={(val) => handleFilterChange('status', val)}
-                        isOpen={isOpen}
-                        placeholder="All Status"
-                        options={[
-                            { id: 'true', label: 'Verified' },
-                            { id: 'false', label: 'Non-Verified' }
-                        ]}
-                    />
 
                     <YearRangeFilter
                         fromDate={filters.from_date}
