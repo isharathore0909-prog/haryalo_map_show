@@ -2,32 +2,34 @@ import { Prisma } from '@prisma/client';
 import { PlantationParams } from '../types/plantation.js';
 
 /**
+ * Helper to clean codes of BOM and whitespace in SQL
+ */
+const clean = (col: string) => `REPLACE(${col}, CHR(65279), '')`;
+
+/**
  * Builds a WHERE object compatible with Prisma's findMany and count
  */
 export const buildPrismaWhere = (params: PlantationParams): any => {
     const where: any = {};
 
-    // Handles both 08-prefixed and short codes for districts/blocks
-    if (params.block) {
-        if (params.block.length > 3 && params.block.startsWith('08')) {
-            const shortBlock = params.block.substring(2);
-            where.OR = [
-                { block_code_id: params.block },
-                { block_code_id: shortBlock },
-            ];
-        } else {
-            where.block_code_id = params.block;
-        }
-    } else if (params.district) {
-        if (params.district.length > 2 && params.district.startsWith('08')) {
-            const shortDist = params.district.substring(2);
-            where.OR = [
-                { dict_code_id: params.district },
-                { dict_code_id: shortDist }
-            ];
-        } else {
-            where.dict_code_id = params.district;
-        }
+    // Support both singular and plural (array) formats
+    const blocks = params.blocks || (params.block ? [params.block] : []);
+    const districts = params.districts || (params.district ? [params.district] : []);
+
+    if (blocks.length > 0) {
+        where.OR = blocks.flatMap(b => {
+            if (b.startsWith('08')) {
+                return [{ block_code_id: b }, { block_code_id: b.substring(2) }];
+            }
+            return [{ block_code_id: b }];
+        });
+    } else if (districts.length > 0) {
+        where.OR = districts.flatMap(d => {
+            if (d.startsWith('08')) {
+                return [{ dict_code_id: d }, { dict_code_id: d.substring(2) }];
+            }
+            return [{ dict_code_id: d }];
+        });
     }
 
     if (params.type) {
@@ -75,23 +77,23 @@ export const buildPrismaWhere = (params: PlantationParams): any => {
  */
 export const buildRawSqlFilters = (params: PlantationParams, tableAlias: string = 'p'): any => {
     const conditions: any[] = [(Prisma as any).sql`1=1` as any];
-
     const alias = (Prisma as any).raw(tableAlias);
 
-    if (params.block) {
-        if (params.block.length > 3 && params.block.startsWith('08')) {
-            const shortBlock = params.block.substring(2);
-            conditions.push((Prisma as any).sql`(${alias}."block_code_id" = ${params.block} OR ${alias}."block_code_id" = ${shortBlock})`);
-        } else {
-            conditions.push((Prisma as any).sql`${alias}."block_code_id" = ${params.block}`);
-        }
-    } else if (params.district) {
-        if (params.district.length > 2 && params.district.startsWith('08')) {
-            const shortDist = params.district.substring(2);
-            conditions.push((Prisma as any).sql`(${alias}."dict_code_id" = ${params.district} OR ${alias}."dict_code_id" = ${shortDist})`);
-        } else {
-            conditions.push((Prisma as any).sql`${alias}."dict_code_id" = ${params.district}`);
-        }
+    const blocks = params.blocks || (params.block ? [params.block] : []);
+    const districts = params.districts || (params.district ? [params.district] : []);
+
+    if (blocks.length > 0) {
+        const bList = blocks.flatMap(b => {
+            if (typeof b === 'string') return b.startsWith('08') ? [b, b.substring(2)] : [b];
+            return [String(b)];
+        });
+        conditions.push((Prisma as any).sql`${(Prisma as any).raw(clean('alias."block_code_id"'.replace('alias', tableAlias)))} IN (${(Prisma as any).join(bList)})`);
+    } else if (districts.length > 0) {
+        const dList = districts.flatMap(d => {
+            if (typeof d === 'string') return d.startsWith('08') ? [d, d.substring(2)] : [d];
+            return [String(d)];
+        });
+        conditions.push((Prisma as any).sql`${(Prisma as any).raw(clean('alias."dict_code_id"'.replace('alias', tableAlias)))} IN (${(Prisma as any).join(dList)})`);
     }
 
     if (params.type) {

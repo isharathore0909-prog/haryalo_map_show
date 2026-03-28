@@ -97,3 +97,17 @@ export const getLandOwnershipList = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+export const getComparisonStats = async (req: Request, res: Response) => {
+    try {
+        const { sideA, sideB } = req.body;
+        if (!sideA || !sideB) {
+            return res.status(400).json({ error: 'Both sideA and sideB filters are required' });
+        }
+        const comparison = await plantationService.getComparisonDiff(sideA, sideB);
+        res.json(serializeBigInt(comparison));
+    } catch (error) {
+        console.error('Error fetching comparison stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};

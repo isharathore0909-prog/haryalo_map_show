@@ -39,35 +39,46 @@ const MapViewer = ({
     selection,
     setSelection,
     label,
-    comparisonMode
+    comparisonMode,
+    diffData,
+    isDiffMode = false,
+    hideBreadcrumbs = false
 }) => {
     const mapRef = useRef(null);
     const [showBoundaries, setShowBoundaries] = useState(false);
     const { stats, geojsonData, loading, summary } = useMapData(viewLevel, selection, externalFilters);
 
-    // Auto-center and invalidate size when layout changes
-    useEffect(() => {
-        if (mapRef.current) {
-            // Multiple triggers to ensure map captures the correct final size
-            const invalidate = () => {
-                mapRef.current.invalidateSize();
-                if (!selection.district && !selection.block) {
-                    mapRef.current.flyToBounds([[23.3, 69.4], [30.2, 78.2]], { duration: 1.5, padding: [20, 20] });
-                } else {
-                    const bounds = selection.blockBBox || selection.districtBBox;
-                    if (bounds) zoomToBBox(mapRef.current, bounds);
-                }
-            };
+    const containerRef = useRef(null);
 
-            const timer1 = setTimeout(invalidate, 100);
-            const timer2 = setTimeout(invalidate, 400); // After CSS transition
-
-            return () => {
-                clearTimeout(timer1);
-                clearTimeout(timer2);
-            };
+    const handleReCenter = () => {
+        if (!mapRef.current) return;
+        if (!selection.district && !selection.block) {
+            mapRef.current.flyToBounds([[23.3, 69.4], [30.2, 78.2]], { duration: 1, padding: [20, 20] });
+        } else {
+            const bounds = selection.blockBBox || selection.districtBBox;
+            if (bounds) zoomToBBox(mapRef.current, bounds);
         }
-    }, [comparisonMode, !!label]);
+    };
+
+    // Efficiently invalidate map size and re-center when container dimensions change
+    useEffect(() => {
+        if (!mapRef.current || !containerRef.current) return;
+
+        const resizeObserver = new ResizeObserver(() => {
+            if (mapRef.current) {
+                mapRef.current.invalidateSize();
+                handleReCenter();
+            }
+        });
+
+        resizeObserver.observe(containerRef.current);
+        return () => resizeObserver.disconnect();
+    }, [selection.district, selection.block, selection.blockBBox, selection.districtBBox]);
+
+    // Handle initial view centering/zoom
+    useEffect(() => {
+        handleReCenter();
+    }, [comparisonMode, !!label, viewLevel]);
 
     // Notify App of new summary stats
     useEffect(() => {
@@ -171,16 +182,18 @@ const MapViewer = ({
     };
 
     return (
-        <div className="map-viewer-wrapper">
+        <div className="map-viewer-wrapper" ref={containerRef}>
             {label && <div className={`side-indicator-badge ${label.toLowerCase().replace(' ', '-')}`}>{label}</div>}
-            <Breadcrumbs
-                district={selection.districtName}
-                block={selection.blockName}
-                viewLevel={viewLevel}
-                onHome={handleHome}
-                onBack={handleBack}
-                loading={loading}
-            />
+            {!hideBreadcrumbs && (
+                <Breadcrumbs
+                    district={selection.districtName}
+                    block={selection.blockName}
+                    viewLevel={viewLevel}
+                    onHome={handleHome}
+                    onBack={handleBack}
+                    loading={loading}
+                />
+            )}
 
             <MapContainer
                 center={[26.5, 74.0]}
@@ -191,7 +204,7 @@ const MapViewer = ({
                 attributionControl={false}
             >
                 <GeoJSONLayer
-                    key={viewLevel} // This ensures proper layer cleanup between levels without excessive flickers
+                    key={`${viewLevel}-${geojsonData?.features?.length}-${!!diffData}`} // Recreate when geography OR diff mode changes
                     geojsonData={geojsonData}
                     stats={stats}
                     viewLevel={viewLevel}
@@ -201,6 +214,8 @@ const MapViewer = ({
                     onFeatureClick={handleFeatureClick}
                     setSelectionInfo={setSelectionInfo}
                     showBoundaries={showBoundaries}
+                    diffData={diffData}
+                    isDiffMode={isDiffMode}
                 />
 
                 <WMSLayer
@@ -214,6 +229,8 @@ const MapViewer = ({
                     blockId={selection.block}
                     filters={externalFilters}
                     setSelectionInfo={setSelectionInfo}
+                    diffData={diffData}
+                    isDiffMode={isDiffMode}
                 />
 
                 <MapRefCapture mapRef={mapRef} />
@@ -222,6 +239,8 @@ const MapViewer = ({
                     viewLevel={viewLevel}
                     showBoundaries={showBoundaries}
                     onToggleBoundaries={setShowBoundaries}
+                    diffData={diffData}
+                    isDiffMode={isDiffMode}
                 />
                 <MapClickEvents onClick={() => setSelectionInfo(null)} />
             </MapContainer>
@@ -229,4 +248,4 @@ const MapViewer = ({
     );
 };
 
-export default MapViewer;
+export default React.memo(MapViewer);

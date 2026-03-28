@@ -11,5 +11,6 @@ router.get('/summary-stats', plantationController.getSummaryStats);
 router.get('/species', plantationController.getSpeciesList);
 router.get('/departments', plantationController.getDepartmentList);
 router.get('/land-ownership', plantationController.getLandOwnershipList);
+router.post('/comparison-stats', plantationController.getComparisonStats);
 
 export default router;

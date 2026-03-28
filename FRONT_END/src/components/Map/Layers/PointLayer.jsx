@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { Trees, TreePine, Apple, Sprout } from 'lucide-react';
+import { Trees, TreePine, Apple, Sprout, Plus, Minus, Info } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { mapService } from '../../../api/mapService';
 import { TYPE_COLORS } from '../../../constants/mapConstants';
@@ -45,6 +45,9 @@ const CACHED_ICONS = Object.entries(TYPE_ICONS).reduce((acc, [type, Icon]) => {
     return acc;
 }, {});
 
+const NEW_PLANTATION_ICON = createIcon(Plus, '#10b981');
+const LOST_PLANTATION_ICON = createIcon(Minus, '#ef4444');
+
 const formatSpeciesName = (text) => {
     if (!text || text === 'null' || text === 'None') return 'Mixed';
     try {
@@ -61,10 +64,16 @@ const formatSpeciesName = (text) => {
     return text;
 };
 
-const PointLayer = ({ viewLevel, blockId, filters, setSelectionInfo }) => {
+const PointLayer = ({ viewLevel, blockId, filters, setSelectionInfo, diffData, isDiffMode }) => {
     const [points, setPoints] = useState([]);
 
     useEffect(() => {
+        // In diff mode, we don't fetch points manually; they come from diffData
+        if (diffData || isDiffMode) {
+            setPoints([]);
+            return;
+        }
+
         if (viewLevel !== 'GP' || !blockId) {
             setPoints([]);
             return;
@@ -89,7 +98,8 @@ const PointLayer = ({ viewLevel, blockId, filters, setSelectionInfo }) => {
 
     return (
         <>
-            {points.map((p) => {
+            {/* Standard Mode Points */}
+            {!diffData && points.map((p) => {
                 const icon = CACHED_ICONS[p.plantation_type] || CACHED_ICONS.default;
                 const typeName = p.plantation_type === 1 ? 'Plantation' :
                     p.plantation_type === 2 ? 'Miyawaki' :
@@ -118,6 +128,50 @@ const PointLayer = ({ viewLevel, blockId, filters, setSelectionInfo }) => {
                     />
                 );
             })}
+
+            {/* Diff Mode: New Plantations */}
+            {diffData?.newPlantations?.map((p) => (
+                <Marker
+                    key={`new-site-${p.id}`}
+                    position={[p.location_lat, p.location_long]}
+                    icon={NEW_PLANTATION_ICON}
+                    eventHandlers={{
+                        click: () => {
+                            setSelectionInfo({
+                                title: 'New Plantation Site',
+                                type: 'Added in Side B',
+                                status: 'new',
+                                details: [
+                                    { label: 'ID', value: p.id },
+                                    { label: 'Note', value: 'This site exists in Period B but not in Period A' }
+                                ]
+                            });
+                        }
+                    }}
+                />
+            ))}
+
+            {/* Diff Mode: Lost Plantations */}
+            {diffData?.lostPlantations?.map((p) => (
+                <Marker
+                    key={`lost-site-${p.id}`}
+                    position={[p.location_lat, p.location_long]}
+                    icon={LOST_PLANTATION_ICON}
+                    eventHandlers={{
+                        click: () => {
+                            setSelectionInfo({
+                                title: 'Removed Plantation Site',
+                                type: 'Missing in Side B',
+                                status: 'lost',
+                                details: [
+                                    { label: 'ID', value: p.id },
+                                    { label: 'Note', value: 'This site existed in Period A but is missing in Period B' }
+                                ]
+                            });
+                        }
+                    }}
+                />
+            ))}
         </>
     );
 };

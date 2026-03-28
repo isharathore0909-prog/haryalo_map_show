@@ -81,14 +81,32 @@ export const mapService = {
         return fetchWithCache(`${API_BASE_URL}/land-ownership/`);
     },
 
-    fetchGeoJSON: async (viewLevel, districtId) => {
-        const typeName = viewLevel === 'District' ? 'svg_workspace:districts_view' : 'svg_workspace:block_view';
-        const paramsStr = viewLevel === 'Block' ? `district_id:${districtId}` : '';
+    fetchGeoJSON: async (viewLevel, districtId, blockId = null) => {
+        let typeName = 'svg_workspace:districts_view';
+        let paramsStr = '';
+
+        if (viewLevel === 'Block') {
+            typeName = 'svg_workspace:block_view';
+            paramsStr = `district_id:${districtId}`;
+        } else if (viewLevel === 'GP') {
+            typeName = 'svg_workspace:gp_view';
+            paramsStr = `block_id:${blockId}`;
+        }
 
         let url = `${GEOSERVER_WFS_URL}?service=WFS&version=1.0.0&request=GetFeature&typeName=${typeName}&outputFormat=application/json`;
         if (paramsStr) url += `&viewparams=${encodeURIComponent(paramsStr)}`;
 
         return fetchWithCache(url);
+    },
+
+    fetchComparisonStats: async (sideA, sideB) => {
+        const response = await fetch(`${API_BASE_URL}/comparison-stats`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sideA, sideB })
+        });
+        if (!response.ok) throw new Error('Failed to fetch comparison stats');
+        return response.json();
     }
 };
 

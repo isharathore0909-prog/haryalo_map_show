@@ -1,12 +1,11 @@
 import React, { useState, lazy, Suspense } from 'react'
 import Navbar from './components/Navbar/Navbar'
 import Sidebar from './components/Sidebar/Sidebar'
-import MapViewer from './components/Map/MapViewer'
-import SelectionPanel from './components/Map/SelectionPanel'
+import { useComparisonState } from './hooks/useComparisonState'
+import UnifiedComparisonMap from './components/Map/UnifiedComparisonMap'
+import './App.css'
 
 const SummaryModal = lazy(() => import('./components/Map/SummaryModal'));
-import { useComparisonState } from './hooks/useComparisonState'
-import './App.css'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -38,57 +37,14 @@ function App() {
           onOpenReport={(side) => setReportConfig({ isOpen: true, side })}
         />
         <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-          <div className={`dashboard-grid ${comparisonMode ? 'comparison-mode' : 'single-mode'}`}>
-            <div
-              className={`map-main-container side-a ${activeSide === 'A' ? 'active-focus' : ''}`}
-              onClick={() => setActiveSide('A')}
-            >
-              <MapViewer
-                externalFilters={sideA.filters}
-                notifySummary={sideA.setSummary}
-                notifyStats={sideA.setStats}
-                setSelectionInfo={sideA.setSelectionInfo}
-                viewLevel={sideA.viewLevel}
-                setViewLevel={sideA.setViewLevel}
-                selection={sideA.selection}
-                setSelection={sideA.setSelection}
-                label={comparisonMode ? "Side A" : null}
-                comparisonMode={comparisonMode}
-              />
-              <SelectionPanel
-                info={sideA.selectionInfo ? { ...sideA.selectionInfo, onOpenReport: () => setReportConfig({ isOpen: true, side: 'A' }) } : null}
-                setInfo={sideA.setSelectionInfo}
-                side="A"
-                comparisonMode={comparisonMode}
-              />
-            </div>
-
-            {comparisonMode && (
-              <div
-                className={`map-main-container side-b ${activeSide === 'B' ? 'active-focus' : ''}`}
-                onClick={() => setActiveSide('B')}
-              >
-                <MapViewer
-                  externalFilters={sideB.filters}
-                  notifySummary={sideB.setSummary}
-                  notifyStats={sideB.setStats}
-                  setSelectionInfo={sideB.setSelectionInfo}
-                  viewLevel={sideB.viewLevel}
-                  setViewLevel={sideB.setViewLevel}
-                  selection={sideB.selection}
-                  setSelection={sideB.setSelection}
-                  label="Side B"
-                  comparisonMode={comparisonMode}
-                />
-                <SelectionPanel
-                  info={sideB.selectionInfo ? { ...sideB.selectionInfo, onOpenReport: () => setReportConfig({ isOpen: true, side: 'B' }) } : null}
-                  setInfo={sideB.setSelectionInfo}
-                  side="B"
-                  comparisonMode={comparisonMode}
-                />
-              </div>
-            )}
-          </div>
+          <UnifiedComparisonMap
+            sideA={sideA}
+            sideB={sideB}
+            activeSide={activeSide}
+            setActiveSide={setActiveSide}
+            comparisonMode={comparisonMode}
+            onOpenReport={(side) => setReportConfig({ isOpen: true, side })}
+          />
         </main>
       </div>
 

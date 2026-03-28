@@ -43,14 +43,14 @@ export const useMapData = (viewLevel, selection, filters) => {
             // Remove immediate reset to prevent white-screen flicker.
             // Data will be swapped once the new fetch is complete.
 
-            if (viewLevel === MAP_LEVELS.GP) {
+            if (viewLevel === MAP_LEVELS.GP && !selection.block) {
                 setLoading(false);
                 return;
             }
 
             setLoading(true);
             try {
-                const data = await mapService.fetchGeoJSON(viewLevel, selection.district);
+                const data = await mapService.fetchGeoJSON(viewLevel, selection.district, selection.block);
                 if (data && data.features) {
                     setGeojsonData(data);
                 } else {
@@ -65,7 +65,7 @@ export const useMapData = (viewLevel, selection, filters) => {
             }
         };
         fetchGeoJSON();
-    }, [viewLevel, selection.district]);
+    }, [viewLevel, selection.district, selection.block]);
 
     // Fetch Summary Stats
     useEffect(() => {

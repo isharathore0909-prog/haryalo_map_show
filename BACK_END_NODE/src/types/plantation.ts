@@ -1,6 +1,8 @@
 export interface PlantationParams {
     district?: string;
     block?: string;
+    districts?: string[];
+    blocks?: string[];
     type?: string;
     department?: string;
     land_ownership?: string;

@@ -1,19 +1,45 @@
-import React, { useState } from 'react';
-import { X, Map as MapIcon, Building, CheckCircle, Info, FileText, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Map as MapIcon, Building, CheckCircle, Info, FileText, BarChart3, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { exportToPDF } from '../../utils/pdfExport';
 import './SummaryModal.css';
 
 const SummaryModal = ({ isOpen, onClose, summary, stats, regionName }) => {
+    const [isDownloading, setIsDownloading] = useState(false);
+    const reportRef = useRef(null);
+
     if (!isOpen) return null;
+
+    const handleDownloadPDF = async () => {
+        if (!reportRef.current) return;
+        setIsDownloading(true);
+        try {
+            await exportToPDF(reportRef.current, `${regionName}_Report.pdf`);
+        } catch (error) {
+            console.error('PDF Generation failed:', error);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} ref={reportRef}>
                 <div className="modal-header">
                     <div className="header-info">
                         <h2>{regionName} Report</h2>
                         <span className="subtitle" style={{ color: '#065f46' }}>Plantation Analytics & Administrative Performance Metrics</span>
                     </div>
-                    <button className="modal-close" onClick={onClose} aria-label="Close report"><X size={24} /></button>
+                    <div className="modal-actions">
+                        <button
+                            className={`download-btn ${isDownloading ? 'loading' : ''}`}
+                            onClick={handleDownloadPDF}
+                            disabled={isDownloading}
+                            title="Download PDF Report"
+                        >
+                            {isDownloading ? 'Processing...' : <><Download size={18} /> Download PDF</>}
+                        </button>
+                        <button className="modal-close" onClick={onClose} aria-label="Close report"><X size={24} /></button>
+                    </div>
                 </div>
 
                 <div className="modal-body">
@@ -117,7 +143,7 @@ const SummaryModal = ({ isOpen, onClose, summary, stats, regionName }) => {
                                 <Building size={20} className="section-icon" />
                                 <h3>Top Contributing Departments</h3>
                             </div>
-                            {summary.by_dept && Object.keys(summary.by_dept).length > 0 ? (
+                            {summary?.by_dept && Object.keys(summary.by_dept).length > 0 ? (
                                 <div className="dept-chart-layout">
                                     <div className="dept-chart-section">
                                         <div className="regional-bar-container">
