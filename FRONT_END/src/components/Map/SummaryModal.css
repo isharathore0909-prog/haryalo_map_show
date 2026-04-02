@@ -75,8 +75,8 @@
 
 /* --- HEADER --- */
 .modal-header {
-    background: #eef9f1;
-    /* Ultra-light mint from your swatch */
+    background: #ffffff;
+    /* White background */
     padding: 32px 48px;
     color: #064e3b;
     display: flex;
@@ -186,7 +186,7 @@
     display: flex;
     flex-direction: column;
     gap: 32px;
-    background: #eef9f1;
+    background: #ffffff;
     /* Match header exactly */
 }
 

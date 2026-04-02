@@ -88,7 +88,7 @@ export const exportToPDF = async (originalElement, fileName = 'Report.pdf') => {
             scale: 2,
             useCORS: true,
             logging: false,
-            backgroundColor: '#eef9f1', // Light mint filler
+            backgroundColor: '#ffffff', // White filler
             height: clone.scrollHeight,
             windowHeight: clone.scrollHeight
         });
@@ -106,9 +106,9 @@ export const exportToPDF = async (originalElement, fileName = 'Report.pdf') => {
         let heightLeft = imgHeightInPdf;
         let position = 0;
 
-        // Fill background with same green before drawing images
+        // Fill background with white before drawing images
         const fillPageBackground = (p) => {
-            p.setFillColor(238, 249, 241); // #eef9f1
+            p.setFillColor(255, 255, 255); // #ffffff
             p.rect(0, 0, pageWidth, pageHeight, 'F');
         };
 
