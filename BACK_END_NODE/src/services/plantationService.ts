@@ -37,6 +37,9 @@ export const getFilteredPlantations = async (params: PlantationParams) => {
                     select: { DISTRICT_N: true }
                 },
                 planta_name_text: true,
+                api_gov_department: {
+                    select: { department_name: true }
+                },
             },
             take: 3000,
         });

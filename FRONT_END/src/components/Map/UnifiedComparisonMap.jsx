@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { mapService } from '../../api/mapService';
 import MapViewer from './MapViewer';
+import SwipeMapViewer from './SwipeMapViewer';
 import SelectionPanel from './SelectionPanel';
-import { Loader2, ArrowRightLeft, Diff } from 'lucide-react';
+import { Loader2, ArrowRightLeft } from 'lucide-react';
 import './MapViewer.css';
 import Breadcrumbs from './Controls/Breadcrumbs';
 import { MAP_LEVELS } from '../../constants/mapConstants';
@@ -15,11 +16,19 @@ const UnifiedComparisonMap = ({
     comparisonMode,
     onOpenReport
 }) => {
-    const [diffData, setDiffData] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [viewMode, setViewMode] = useState('split'); // 'split' or 'diff'
+    const [viewMode, setViewMode] = useState('split'); // 'split' or 'swipe'
 
     const handleHome = (side) => {
+        if (viewMode === 'swipe') {
+            sideA.setViewLevel(MAP_LEVELS.DISTRICT);
+            sideA.setSelection({ district: null, districtName: null, block: null, blockName: null, districtBBox: null, blockBBox: null });
+            sideA.setSelectionInfo(null);
+            sideB.setViewLevel(MAP_LEVELS.DISTRICT);
+            sideB.setSelection({ district: null, districtName: null, block: null, blockName: null, districtBBox: null, blockBBox: null });
+            sideB.setSelectionInfo(null);
+            return;
+        }
         const s = side === 'A' ? sideA : sideB;
         s.setViewLevel(MAP_LEVELS.DISTRICT);
         s.setSelection({ district: null, districtName: null, block: null, blockName: null, districtBBox: null, blockBBox: null });
@@ -27,6 +36,20 @@ const UnifiedComparisonMap = ({
     };
 
     const handleBack = (side) => {
+        if (viewMode === 'swipe') {
+            sideA.setSelectionInfo(null);
+            sideB.setSelectionInfo(null);
+            if (sideA.viewLevel === MAP_LEVELS.GP) {
+                sideA.setViewLevel(MAP_LEVELS.BLOCK);
+                sideA.setSelection(p => ({ ...p, block: null, blockName: null, blockBBox: null }));
+                sideB.setViewLevel(MAP_LEVELS.BLOCK);
+                sideB.setSelection(p => ({ ...p, block: null, blockName: null, blockBBox: null }));
+            } else {
+                handleHome('A');
+            }
+            return;
+        }
+
         const s = side === 'A' ? sideA : sideB;
         s.setSelectionInfo(null);
         if (s.viewLevel === MAP_LEVELS.GP) {
@@ -37,37 +60,11 @@ const UnifiedComparisonMap = ({
         }
     };
 
-    useEffect(() => {
-        if (comparisonMode && viewMode === 'diff') {
-            fetchDiff();
-        }
-    }, [sideA.filters, sideB.filters, sideA.selection, sideB.selection, viewMode, comparisonMode]);
-
-    const fetchDiff = async () => {
-        setLoading(true);
-        setDiffData(null);
-        try {
-            // Merge selection into filters for the backend to know the correct regional scope
-            // IMPORTANT: For Change Detection, we must compare the SAME region (Side B's current view)
-            // If we use side A's selection, we might compare different regions entirely.
-            const fullA = {
-                ...sideA.filters,
-                districts: sideB.selection.district ? [sideB.selection.district] : [],
-                blocks: sideB.selection.block ? [sideB.selection.block] : []
-            };
-            const fullB = {
-                ...sideB.filters,
-                districts: sideB.selection.district ? [sideB.selection.district] : [],
-                blocks: sideB.selection.block ? [sideB.selection.block] : []
-            };
-
-            const data = await mapService.fetchComparisonStats(fullA, fullB);
-            setDiffData(data);
-        } catch (err) {
-            console.error("Failed to fetch diff stats:", err);
-        } finally {
-            setLoading(false);
-        }
+    const handleEnterSwipeMode = () => {
+        setViewMode('swipe');
+        // Force Side B to match Side A's geographic view when entering Swipe mode
+        sideB.setViewLevel(sideA.viewLevel);
+        sideB.setSelection(sideA.selection);
     };
 
     // --- Rendering Logic ---
@@ -123,11 +120,11 @@ const UnifiedComparisonMap = ({
                                 <span>Split View</span>
                             </button>
                             <button
-                                className={`view-toggle-btn ${viewMode === 'diff' ? 'active' : ''}`}
-                                onClick={() => setViewMode('diff')}
+                                className={`view-toggle-btn ${viewMode === 'swipe' ? 'active' : ''}`}
+                                onClick={handleEnterSwipeMode}
                             >
-                                <Diff size={16} />
-                                <span>Change Detection</span>
+                                <ArrowRightLeft size={16} />
+                                <span>Swipe View</span>
                             </button>
                         </div>
 
@@ -154,19 +151,19 @@ const UnifiedComparisonMap = ({
                                 <span>Split View</span>
                             </button>
                             <button
-                                className={`view-toggle-btn ${viewMode === 'diff' ? 'active' : ''}`}
-                                onClick={() => setViewMode('diff')}
+                                className={`view-toggle-btn ${viewMode === 'swipe' ? 'active' : ''}`}
+                                onClick={handleEnterSwipeMode}
                             >
-                                <Diff size={16} />
-                                <span>Change Detection</span>
+                                <ArrowRightLeft size={16} />
+                                <span>Swipe View</span>
                             </button>
                         </div>
                         <Breadcrumbs
-                            district={sideB.selection.districtName}
-                            block={sideB.selection.blockName}
-                            viewLevel={sideB.viewLevel}
-                            onHome={() => handleHome('B')}
-                            onBack={() => handleBack('B')}
+                            district={sideA.selection.districtName}
+                            block={sideA.selection.blockName}
+                            viewLevel={sideA.viewLevel}
+                            onHome={() => handleHome('A')}
+                            onBack={() => handleBack('A')}
                         />
                     </div>
                 )}
@@ -221,35 +218,11 @@ const UnifiedComparisonMap = ({
                         />
                     </div>
                 </div>
-            ) : (
-                <div className="map-main-container diff-mode active-focus">
-                    {loading && (
-                        <div className="diff-loading-overlay">
-                            <Loader2 className="animate-spin" />
-                            <span>Calculating Spatial Changes...</span>
-                        </div>
-                    )}
-                    <MapViewer
-                        externalFilters={sideB.filters}
-                        diffData={diffData}
-                        isDiffMode={true}
-                        notifySummary={sideB.setSummary}
-                        notifyStats={sideB.setStats}
-                        setSelectionInfo={sideB.setSelectionInfo}
-                        viewLevel={sideB.viewLevel}
-                        setViewLevel={sideB.setViewLevel}
-                        selection={sideB.selection}
-                        setSelection={sideB.setSelection}
-                        hideBreadcrumbs={true}
-                    />
-                    <SelectionPanel
-                        info={sideB.selectionInfo ? { ...sideB.selectionInfo, onOpenReport: () => onOpenReport('B') } : null}
-                        setInfo={sideB.setSelectionInfo}
-                        side="Diff"
-                        comparisonMode={true}
-                    />
+            ) : viewMode === 'swipe' ? (
+                <div className="map-main-container swipe-mode active-focus" style={{ width: '100%', height: '100%' }}>
+                    <SwipeMapViewer sideA={sideA} sideB={sideB} onOpenReport={onOpenReport} />
                 </div>
-            )}
+            ) : null}
         </div>
     );
 };

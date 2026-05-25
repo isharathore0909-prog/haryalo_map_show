@@ -134,3 +134,56 @@ export const buildRawSqlFilters = (params: PlantationParams, tableAlias: string 
 
     return (Prisma as any).join(conditions, ' AND ');
 };
+
+/**
+ * Builds a SQL fragment for Prisma.$queryRaw specifically for Individual tables.
+ * Only applies geography and date filters, ignoring department/species/type
+ * since those columns don't exist uniformly on individual tables.
+ */
+export const buildIndividualRawSqlFilters = (params: PlantationParams, tableAlias: string = 'p'): any => {
+    const conditions: any[] = [(Prisma as any).sql`1=1` as any];
+    const alias = (Prisma as any).raw(tableAlias);
+
+    const blocks = params.blocks || (params.block ? [params.block] : []);
+    const districts = params.districts || (params.district ? [params.district] : []);
+
+    if (blocks.length > 0) {
+        const bList = blocks.flatMap(b => {
+            if (typeof b === 'string') return b.startsWith('08') ? [b, b.substring(2)] : [b];
+            return [String(b)];
+        });
+        conditions.push((Prisma as any).sql`${(Prisma as any).raw(clean('alias."block_code_id"'.replace('alias', tableAlias)))} IN (${(Prisma as any).join(bList)})`);
+    } else if (districts.length > 0) {
+        const dList = districts.flatMap(d => {
+            if (typeof d === 'string') return d.startsWith('08') ? [d, d.substring(2)] : [d];
+            return [String(d)];
+        });
+        conditions.push((Prisma as any).sql`${(Prisma as any).raw(clean('alias."dict_code_id"'.replace('alias', tableAlias)))} IN (${(Prisma as any).join(dList)})`);
+    }
+
+    if (params.type) {
+        try {
+            const types = params.type.split(',').map(t => parseInt(t.trim(), 10));
+            // Type 4 is Individual. If type is filtered and doesn't include 4, return false condition.
+            if (!types.includes(4)) {
+                conditions.push((Prisma as any).sql`1=0`);
+            }
+        } catch (e) { /* ignore invalid types */ }
+    }
+
+    if (params.from_date) {
+        conditions.push((Prisma as any).sql`${alias}."created_at" >= ${params.from_date + '-01-01'}::date`);
+    }
+
+    if (params.to_date) {
+        conditions.push((Prisma as any).sql`${alias}."created_at" <= ${params.to_date + '-12-31'}::date`);
+    }
+
+    if (params.status !== undefined) {
+        const val = typeof params.status === 'string' ? params.status.toLowerCase() === 'true' : !!params.status;
+        conditions.push((Prisma as any).sql`${alias}."status" = ${val}`);
+    }
+
+    return (Prisma as any).join(conditions, ' AND ');
+};
+

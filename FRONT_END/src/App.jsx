@@ -58,6 +58,8 @@ function App() {
             ? (sideA.selection.blockName || sideA.selection.districtName || 'Rajasthan')
             : (sideB.selection.blockName || sideB.selection.districtName || 'Rajasthan')
           }
+          filters={reportConfig.side === 'A' ? sideA.filters : sideB.filters}
+          selection={reportConfig.side === 'A' ? sideA.selection : sideB.selection}
         />
       </Suspense>
     </div>

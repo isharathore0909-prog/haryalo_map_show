@@ -48,7 +48,8 @@ export const getPlantationPoints = async (req: Request, res: Response) => {
             gp_name: p.portaldash_gpfinallist?.GP_FINAL_N,
             block_name: p.portaldash_blocklist?.BLOCK_N,
             district_name: p.portaldash_districtlist?.DISTRICT_N,
-            planta_name_text: p.planta_name_text
+            planta_name_text: p.planta_name_text,
+            department_name: p.api_gov_department?.department_name
         }));
 
         res.json(serializeBigInt(transformed));

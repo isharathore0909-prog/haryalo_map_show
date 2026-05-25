@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../utils/prisma.js';
 import { PlantationParams, SummaryStats } from '../types/plantation.js';
-import { buildRawSqlFilters } from '../utils/filterBuilder.js';
+import { buildRawSqlFilters, buildIndividualRawSqlFilters } from '../utils/filterBuilder.js';
 
 /**
  * Helper to clean codes of BOM and whitespace in SQL
@@ -13,6 +13,9 @@ const clean = (col: string) => `REPLACE(${col}, CHR(65279), '')`;
  */
 export const getDistrictStats = async (params: PlantationParams) => {
     const whereSql = buildRawSqlFilters(params, 'p');
+    const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
+    const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
+    const indWhereSqlPvt = buildIndividualRawSqlFilters(params, 'ip');
 
     return await prisma.$queryRaw`
         WITH dists AS (
@@ -20,19 +23,30 @@ export const getDistrictStats = async (params: PlantationParams) => {
                 ${(Prisma as any).raw(clean('"DISTRICT_C"'))} as code,
                 "DISTRICT_N" as name
             FROM "portaldash_districtlist"
+        ),
+        indiv AS (
+            SELECT "dict_code_id" as code, COUNT(*) as cnt FROM "api_plantation_bygov" ig WHERE ${indWhereSqlGov} GROUP BY "dict_code_id"
+            UNION ALL
+            SELECT "dict_code_id" as code, COUNT(*) as cnt FROM "api_plantation_byngo" ing WHERE ${indWhereSqlNgo} GROUP BY "dict_code_id"
+            UNION ALL
+            SELECT "dict_code_id" as code, COUNT(*) as cnt FROM "api_plantation_bypvt" ip WHERE ${indWhereSqlPvt} GROUP BY "dict_code_id"
+        ),
+        indiv_agg AS (
+            SELECT code, SUM(cnt) as individual_plants FROM indiv GROUP BY code
         )
         SELECT 
             d.code,
             d.name,
-            COALESCE(SUM(CASE WHEN p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as total_plants,
+            COALESCE(SUM(CASE WHEN p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) + COALESCE(i.individual_plants, 0) as total_plants,
             COUNT(p."id") as site_count,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 1 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as block_plants,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 2 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as miyawaki_plants,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 3 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as fal_vatika_plants,
-            0 as individual_plants
+            COALESCE(i.individual_plants, 0) as individual_plants
         FROM dists d
         LEFT JOIN "api_blockplantation" p ON d.code = p."dict_code_id" AND ${whereSql}
-        GROUP BY d.code, d.name
+        LEFT JOIN indiv_agg i ON d.code = i.code
+        GROUP BY d.code, d.name, i.individual_plants
         ORDER BY d.name
     `;
 };
@@ -42,6 +56,9 @@ export const getDistrictStats = async (params: PlantationParams) => {
  */
 export const getBlockStats = async (params: PlantationParams) => {
     const whereSql = buildRawSqlFilters(params, 'p');
+    const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
+    const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
+    const indWhereSqlPvt = buildIndividualRawSqlFilters(params, 'ip');
     const district = String(params.district || '');
     const distCode = district ? district.replace(/^08/, '').replace(/\ufeff/g, '').trim() : null;
     const longDistCode = distCode ? '08' + distCode : null;
@@ -53,21 +70,32 @@ export const getBlockStats = async (params: PlantationParams) => {
                 "block_name" as name,
                 ${(Prisma as any).raw(clean('"District_id"'))} as dist_id
             FROM "api_nursery_blocklist"
+        ),
+        indiv AS (
+            SELECT "block_code_id" as code, COUNT(*) as cnt FROM "api_plantation_bygov" ig WHERE ${indWhereSqlGov} GROUP BY "block_code_id"
+            UNION ALL
+            SELECT "block_code_id" as code, COUNT(*) as cnt FROM "api_plantation_byngo" ing WHERE ${indWhereSqlNgo} GROUP BY "block_code_id"
+            UNION ALL
+            SELECT "block_code_id" as code, COUNT(*) as cnt FROM "api_plantation_bypvt" ip WHERE ${indWhereSqlPvt} GROUP BY "block_code_id"
+        ),
+        indiv_agg AS (
+            SELECT code, SUM(cnt) as individual_plants FROM indiv GROUP BY code
         )
         SELECT 
             b.code,
             b.name,
-            COALESCE(SUM(CASE WHEN p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as total_plants,
+            COALESCE(SUM(CASE WHEN p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) + COALESCE(i.individual_plants, 0) as total_plants,
             COUNT(p."id") as site_count,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 1 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as block_plants,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 2 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as miyawaki_plants,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 3 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as fal_vatika_plants,
-            0 as individual_plants
+            COALESCE(i.individual_plants, 0) as individual_plants
         FROM blks b
         LEFT JOIN "api_blockplantation" p ON b.code = p."block_code_id" AND ${whereSql}
+        LEFT JOIN indiv_agg i ON b.code = i.code
         WHERE 1=1
         ${distCode ? (Prisma as any).sql`AND (b.dist_id = ${distCode} OR b.dist_id = ${longDistCode})` : (Prisma as any).empty}
-        GROUP BY b.code, b.name
+        GROUP BY b.code, b.name, i.individual_plants
         ORDER BY b.name
     `;
 };
@@ -77,6 +105,9 @@ export const getBlockStats = async (params: PlantationParams) => {
  */
 export const getGPStats = async (params: PlantationParams) => {
     const whereSql = buildRawSqlFilters(params, 'p');
+    const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
+    const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
+    const indWhereSqlPvt = buildIndividualRawSqlFilters(params, 'ip');
     const block = String(params.block || '');
     const blockCode = block ? block.replace(/\ufeff/g, '').trim() : null;
 
@@ -88,21 +119,32 @@ export const getGPStats = async (params: PlantationParams) => {
                 ${(Prisma as any).raw(clean('m."block_id"'))} as block_id
             FROM "portaldash_gpfinallist" g
             INNER JOIN "api_nursery_grampanchayatlist" m ON ${(Prisma as any).raw(clean('g."GP_FINAL_C"'))} = ${(Prisma as any).raw(clean('m."gp_id"'))}
+        ),
+        indiv AS (
+            SELECT "gp_code_id" as code, COUNT(*) as cnt FROM "api_plantation_bygov" ig WHERE ${indWhereSqlGov} GROUP BY "gp_code_id"
+            UNION ALL
+            SELECT "gp_code_id" as code, COUNT(*) as cnt FROM "api_plantation_byngo" ing WHERE ${indWhereSqlNgo} GROUP BY "gp_code_id"
+            UNION ALL
+            SELECT "gp_code_id" as code, COUNT(*) as cnt FROM "api_plantation_bypvt" ip WHERE ${indWhereSqlPvt} GROUP BY "gp_code_id"
+        ),
+        indiv_agg AS (
+            SELECT code, SUM(cnt) as individual_plants FROM indiv GROUP BY code
         )
         SELECT 
             g.code,
             g.name,
-            COALESCE(SUM(CASE WHEN p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as total_plants,
+            COALESCE(SUM(CASE WHEN p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) + COALESCE(i.individual_plants, 0) as total_plants,
             COUNT(p."id") as site_count,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 1 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as block_plants,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 2 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as miyawaki_plants,
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 3 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as fal_vatika_plants,
-            0 as individual_plants
+            COALESCE(i.individual_plants, 0) as individual_plants
         FROM gps g
         LEFT JOIN "api_blockplantation" p ON g.code = p."gp_code_id" AND ${whereSql}
+        LEFT JOIN indiv_agg i ON g.code = i.code
         WHERE 1=1
         ${blockCode ? (Prisma as any).sql`AND g.block_id = ${blockCode}` : (Prisma as any).empty}
-        GROUP BY g.code, g.name
+        GROUP BY g.code, g.name, i.individual_plants
         ORDER BY g.name
     `;
 };
@@ -112,6 +154,9 @@ export const getGPStats = async (params: PlantationParams) => {
  */
 export const getSummaryStats = async (params: PlantationParams): Promise<any> => {
     const whereSql = buildRawSqlFilters(params, 'p');
+    const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
+    const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
+    const indWhereSqlPvt = buildIndividualRawSqlFilters(params, 'ip');
 
     // 1. Get Totals
     const totals: any[] = await prisma.$queryRaw`
@@ -125,6 +170,17 @@ export const getSummaryStats = async (params: PlantationParams): Promise<any> =>
             COALESCE(SUM(CASE WHEN p."plantation_type_id" = 3 AND p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as fal_vatika_plants
         FROM "api_blockplantation" p
         WHERE ${whereSql}
+    `;
+
+    const indTotals: any[] = await prisma.$queryRaw`
+        WITH indiv AS (
+            SELECT 1 FROM "api_plantation_bygov" ig WHERE ${indWhereSqlGov}
+            UNION ALL
+            SELECT 1 FROM "api_plantation_byngo" ing WHERE ${indWhereSqlNgo}
+            UNION ALL
+            SELECT 1 FROM "api_plantation_bypvt" ip WHERE ${indWhereSqlPvt}
+        )
+        SELECT COUNT(*) as individual_plants FROM indiv
     `;
 
     // 2. Get Dept Breakdown
@@ -145,8 +201,10 @@ export const getSummaryStats = async (params: PlantationParams): Promise<any> =>
     });
 
     const t = totals[0] || {};
+    const indCount = Number(indTotals[0]?.individual_plants || 0);
+
     return [{
-        total_plants: Number(t.total_plants || 0),
+        total_plants: Number(t.total_plants || 0) + indCount,
         total_sites: Number(t.total_sites || 0),
         total_species: Number(t.total_species || 0),
         verified_count: Number(t.verified_count || 0),
@@ -154,7 +212,7 @@ export const getSummaryStats = async (params: PlantationParams): Promise<any> =>
             "Block": Number(t.block_plants || 0),
             "Miyawaki": Number(t.miyawaki_plants || 0),
             "Fal Vatika": Number(t.fal_vatika_plants || 0),
-            "Individual": 0
+            "Individual": indCount
         },
         by_dept
     }];

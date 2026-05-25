@@ -65,10 +65,14 @@ const GeoJSONLayer = ({
 
     const getFeatureId = (feature) => {
         const props = feature.properties;
-        return props.boundary_id || props.gp_id || props.gp_code || props.gp_c || props.GP_C ||
-            props.GP_FINAL_C || props.gp_final_c || props.GP_ENTITY_ ||
-            props.district_id || props.district_c || props.DISTRICT_C ||
-            props.block_id || props.block_c || props.id;
+        if (viewLevel === MAP_LEVELS.GP) {
+            return props.boundary_id || props.gp_id || props.gp_code || props.gp_c || props.GP_C ||
+                props.GP_FINAL_C || props.gp_final_c || props.GP_ENTITY_ || props.id;
+        } else if (viewLevel === MAP_LEVELS.BLOCK) {
+            return props.boundary_id || props.block_id || props.block_c || props.id;
+        } else {
+            return props.boundary_id || props.district_id || props.district_c || props.DISTRICT_C || props.id;
+        }
     };
 
     const onEachFeature = (feature, layer) => {
@@ -182,12 +186,26 @@ const GeoJSONLayer = ({
     };
 
     const renderBubbles = () => {
-        if (viewLevel !== 'Block' || diffData || isDiffMode) return null;
+        if (diffData || isDiffMode) return null;
+        if (viewLevel !== 'Block' && viewLevel !== 'GP') return null;
 
         return geojsonData.features.map(feature => {
             const id = getFeatureId(feature);
-            const blockData = stats?.find(s => s.code == id);
-            const val = blockData ? (blockData.total_plants || 0) : 0;
+            const dataObj = stats?.find(s => s.code == id);
+            
+            let val = 0;
+            let bubbleColor = '#2f855a'; // green for block
+            let titleType = 'Block Cluster';
+            let label = 'Total Plants';
+            
+            if (viewLevel === 'Block') {
+                val = dataObj ? (dataObj.total_plants || 0) : 0;
+            } else if (viewLevel === 'GP') {
+                val = dataObj ? (dataObj.individual_plants || 0) : 0;
+                bubbleColor = '#f97316'; // orange for individual
+                titleType = 'Individual Plantations';
+                label = 'Individual Plants';
+            }
 
             if (val === 0) return null;
 
@@ -197,16 +215,16 @@ const GeoJSONLayer = ({
             const radius = Math.sqrt(Number(val)) / 12;
             if (isNaN(radius)) return null;
 
-            const sites = blockData ? blockData.site_count : 0;
-            const name = feature.properties.name || feature.properties.block_n || (blockData ? blockData.name : "Unknown");
+            const sites = dataObj ? dataObj.site_count : 0;
+            const name = feature.properties.name || feature.properties.block_n || feature.properties.gp_name || (dataObj ? dataObj.name : "Unknown");
 
             return (
                 <CircleMarker
-                    key={`bubble-${id}`}
+                    key={`bubble-${viewLevel}-${id}`}
                     center={latlng}
                     radius={Math.max(radius, 6)}
                     pathOptions={{
-                        fillColor: '#2f855a',
+                        fillColor: bubbleColor,
                         color: 'white',
                         weight: 2,
                         opacity: 1,
@@ -217,10 +235,12 @@ const GeoJSONLayer = ({
                             L.DomEvent.stopPropagation(e);
                             setSelectionInfo({
                                 title: name,
-                                type: 'Block Cluster',
-                                details: [
+                                type: titleType,
+                                details: viewLevel === 'Block' ? [
                                     { label: 'Total Plants', value: val.toLocaleString() },
                                     { label: 'Plantation Sites', value: sites.toLocaleString() }
+                                ] : [
+                                    { label: label, value: val.toLocaleString() }
                                 ]
                             });
                         }
@@ -229,6 +249,15 @@ const GeoJSONLayer = ({
             );
         });
     };
+
+    const geoJsonRef = React.useRef(null);
+
+    React.useEffect(() => {
+        if (geoJsonRef.current) {
+            // Re-apply style to all features in the GeoJSON layer
+            geoJsonRef.current.setStyle(style);
+        }
+    }, [stats, diffData, isDiffMode, highlightedId, viewLevel]);
 
     return (
         <>
@@ -242,7 +271,8 @@ const GeoJSONLayer = ({
 
             {/* Interactive/Data Layer */}
             <GeoJSON
-                key={`${viewLevel}-${districtId || 'all'}-${blockId || 'none'}-${isDiffMode ? 'diff' : 'explore'}-${activeData.features?.length}`}
+                ref={geoJsonRef}
+                key={`${viewLevel}-${districtId || 'all'}-${blockId || 'none'}-${activeData.features?.length}`}
                 data={activeData}
                 style={style}
                 onEachFeature={onEachFeature}

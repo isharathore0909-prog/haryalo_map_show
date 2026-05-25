@@ -1,9 +1,9 @@
 import React from 'react';
-import { Trees, TreePine, Apple, TrendingUp, TrendingDown, Minus, Plus } from 'lucide-react';
+import { Trees, TreePine, Apple, User, TrendingUp, TrendingDown, Minus, Plus } from 'lucide-react';
 import { TYPE_COLORS } from '../../constants/mapConstants';
 import './Legend.css';
 
-const Legend = ({ viewLevel, showBoundaries, onToggleBoundaries, diffData, isDiffMode }) => {
+const Legend = ({ viewLevel, showBoundaries, onToggleBoundaries }) => {
     const diffGrowthItems = [
         { label: '> 100K', color: '#065f46', icon: TrendingUp },
         { label: '10K - 100K', color: '#10b981', icon: TrendingUp },
@@ -44,61 +44,8 @@ const Legend = ({ viewLevel, showBoundaries, onToggleBoundaries, diffData, isDif
         <div className="map-legend">
             <h4 className="legend-title">Legend</h4>
             <div className="legend-content">
-                {/* Change Detection Legend */}
-                {isDiffMode && (
-                    <div className="legend-section diff-legend">
-                        <span className="legend-subtitle">Growth / Gain</span>
-                        {diffGrowthItems.map((item, index) => (
-                            <div key={index} className="legend-item">
-                                <div className="legend-icon-wrapper" style={{ border: `1.5px solid ${item.color}`, background: `${item.color}10`, width: '18px', height: '18px' }}>
-                                    <item.icon size={10} color={item.color} strokeWidth={3} />
-                                </div>
-                                <span className="legend-label" style={{ fontSize: '0.75rem' }}>{item.label}</span>
-                            </div>
-                        ))}
-
-                        <span className="legend-subtitle" style={{ marginTop: '8px' }}>Reduction / Loss</span>
-                        {diffLossItems.map((item, index) => (
-                            <div key={index} className="legend-item">
-                                <div className="legend-icon-wrapper" style={{ border: `1.5px solid ${item.color}`, background: `${item.color}10`, width: '18px', height: '18px' }}>
-                                    <item.icon size={10} color={item.color} strokeWidth={3} />
-                                </div>
-                                <span className="legend-label" style={{ fontSize: '0.75rem' }}>{item.label}</span>
-                            </div>
-                        ))}
-
-                        <div className="legend-item" style={{ marginTop: '8px' }}>
-                            <div className="legend-icon-wrapper" style={{ border: `1.5px solid ${noChangeItem.color}`, background: `${noChangeItem.color}10`, width: '18px', height: '18px' }}>
-                                <noChangeItem.icon size={10} color={noChangeItem.color} strokeWidth={3} />
-                            </div>
-                            <span className="legend-label" style={{ fontSize: '0.75rem' }}>{noChangeItem.label}</span>
-                        </div>
-
-                        {viewLevel !== 'District' && (
-                            <>
-                                <hr className="legend-divider" style={{ margin: '12px 0', border: 'none', borderTop: '1px solid #e2e8f0' }} />
-                                <span className="legend-subtitle">Individual Site Changes</span>
-                                <div className="legend-item">
-                                    <div className="legend-icon-wrapper" style={{ border: '1.5px solid #10b981', background: '#10b98110' }}>
-                                        <Plus size={10} color="#10b981" strokeWidth={3} />
-                                    </div>
-                                    <span className="legend-label" style={{ fontSize: '0.75rem' }}>New Plantation Site</span>
-                                </div>
-                                <div className="legend-item">
-                                    <div className="legend-icon-wrapper" style={{ border: '1.5px solid #ef4444', background: '#ef444410' }}>
-                                        <Minus size={10} color="#ef4444" strokeWidth={3} />
-                                    </div>
-                                    <span className="legend-label" style={{ fontSize: '0.75rem' }}>Removed Site</span>
-                                </div>
-                            </>
-                        )}
-
-                        <hr className="legend-divider" style={{ margin: '12px 0', border: 'none', borderTop: '1px solid #e2e8f0' }} />
-                    </div>
-                )}
-
                 {/* District Level: Choropleth */}
-                {viewLevel === 'District' && !isDiffMode && (
+                {viewLevel === 'District' && (
                     <div className="legend-section">
                         <span className="legend-subtitle">Plantation Density (District)</span>
                         <div className="choropleth-scale">
@@ -116,7 +63,7 @@ const Legend = ({ viewLevel, showBoundaries, onToggleBoundaries, diffData, isDif
                 )}
 
                 {/* Block Level: Proportional Bubbles */}
-                {viewLevel === 'Block' && !isDiffMode && (
+                {viewLevel === 'Block' && (
                     <div className="legend-section">
                         <span className="legend-subtitle">Plantation Scale (Block)</span>
                         <div className="bubble-scale">
@@ -148,7 +95,7 @@ const Legend = ({ viewLevel, showBoundaries, onToggleBoundaries, diffData, isDif
                 )}
 
                 {/* GP Level: Individual Plantation Type Icons */}
-                {viewLevel === 'GP' && !isDiffMode && (
+                {viewLevel === 'GP' && (
                     <div className="legend-section">
                         <span className="legend-subtitle">Plantation Categories</span>
                         <div className="legend-item">
@@ -168,6 +115,12 @@ const Legend = ({ viewLevel, showBoundaries, onToggleBoundaries, diffData, isDif
                                 <Apple size={12} color={TYPE_COLORS[3]} fill={TYPE_COLORS[3]} fillOpacity={0.1} />
                             </div>
                             <span className="legend-label">Fal Vatika</span>
+                        </div>
+                        <div className="legend-item">
+                            <div className="legend-icon-wrapper" style={{ border: `1.5px solid ${TYPE_COLORS[4]}` }}>
+                                <User size={12} color={TYPE_COLORS[4]} fill={TYPE_COLORS[4]} fillOpacity={0.1} />
+                            </div>
+                            <span className="legend-label">Individual Plantation</span>
                         </div>
                     </div>
                 )}
