@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StatsPanel = ({ totalPlants, totalSites, isOpen, accentColor, regionName, onOpenReport }) => {
+const StatsPanel = ({ totalPlants, totalSites, isOpen, accentColor, regionName, selectedDepartment, onOpenReport }) => {
     if (!isOpen) return null;
 
     const cardStyle = accentColor ? {
@@ -11,10 +11,10 @@ const StatsPanel = ({ totalPlants, totalSites, isOpen, accentColor, regionName, 
     return (
         <div className="filter-section stats-panel">
             <div className="region-header-row">
-                <div className="region-context-badge">
-                    {regionName || 'Rajasthan'}
+                <div className="region-context-badge" title={selectedDepartment || regionName || 'Rajasthan'}>
+                    {selectedDepartment ? (selectedDepartment.length > 20 ? selectedDepartment.substring(0, 20) + '...' : selectedDepartment) : (regionName || 'Rajasthan')}
                 </div>
-                {regionName && regionName !== 'Rajasthan' && (
+                {((regionName && regionName !== 'Rajasthan') || selectedDepartment) && (
                     <button className="report-mini-btn" onClick={onOpenReport} title="View Detailed Report">
                         Report
                     </button>

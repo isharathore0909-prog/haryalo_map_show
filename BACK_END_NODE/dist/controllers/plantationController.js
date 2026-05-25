@@ -1,43 +1,40 @@
-import type { Request, Response } from 'express';
 import * as plantationService from '../services/plantationService.js';
 import { serializeBigInt } from '../utils/bigint.js';
-
-export const getDistrictStats = async (req: Request, res: Response) => {
+export const getDistrictStats = async (req, res) => {
     try {
-        const stats = await plantationService.getDistrictStats(req.query as any);
+        const stats = await plantationService.getDistrictStats(req.query);
         res.json(serializeBigInt(stats));
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching district stats:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getBlockStats = async (req: Request, res: Response) => {
+export const getBlockStats = async (req, res) => {
     try {
-        const stats = await plantationService.getBlockStats(req.query as any);
+        const stats = await plantationService.getBlockStats(req.query);
         res.json(serializeBigInt(stats));
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching block stats:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getGPStats = async (req: Request, res: Response) => {
+export const getGPStats = async (req, res) => {
     try {
-        const stats = await plantationService.getGPStats(req.query as any);
+        const stats = await plantationService.getGPStats(req.query);
         res.json(serializeBigInt(stats));
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching GP stats:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getPlantationPoints = async (req: Request, res: Response) => {
+export const getPlantationPoints = async (req, res) => {
     try {
-        const points = await plantationService.getFilteredPlantations(req.query as any);
-
+        const points = await plantationService.getFilteredPlantations(req.query);
         // Transform to match Django serializer exactly if needed
-        const transformed = points.map((p: any) => ({
+        const transformed = points.map((p) => ({
             id: p.id,
             location_lat: p.location_lat,
             location_long: p.location_long,
@@ -51,55 +48,54 @@ export const getPlantationPoints = async (req: Request, res: Response) => {
             planta_name_text: p.planta_name_text,
             department_name: p.api_gov_department?.department_name
         }));
-
         res.json(serializeBigInt(transformed));
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching plantation points:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getSummaryStats = async (req: Request, res: Response) => {
+export const getSummaryStats = async (req, res) => {
     try {
-        const summary = await plantationService.getSummaryStats(req.query as any);
+        const summary = await plantationService.getSummaryStats(req.query);
         res.json(serializeBigInt(summary[0]));
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching summary stats:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getSpeciesList = async (req: Request, res: Response) => {
+export const getSpeciesList = async (req, res) => {
     try {
         const species = await plantationService.getSpeciesList();
         res.json(species);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching species list:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getDepartmentList = async (req: Request, res: Response) => {
+export const getDepartmentList = async (req, res) => {
     try {
         const deps = await plantationService.getDepartmentList();
         res.json(deps);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching departments:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getLandOwnershipList = async (req: Request, res: Response) => {
+export const getLandOwnershipList = async (req, res) => {
     try {
         const land = await plantationService.getLandOwnershipList();
         res.json(land);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching land ownership:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-export const getComparisonStats = async (req: Request, res: Response) => {
+export const getComparisonStats = async (req, res) => {
     try {
         const { sideA, sideB } = req.body;
         if (!sideA || !sideB) {
@@ -107,7 +103,8 @@ export const getComparisonStats = async (req: Request, res: Response) => {
         }
         const comparison = await plantationService.getComparisonDiff(sideA, sideB);
         res.json(serializeBigInt(comparison));
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching comparison stats:', error);
         res.status(500).json({ error: 'Internal server error' });
     }

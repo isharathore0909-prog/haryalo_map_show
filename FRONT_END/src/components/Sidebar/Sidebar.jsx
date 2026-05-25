@@ -39,7 +39,8 @@ const Sidebar = ({
     const plantationTypes = [
         { id: 1, label: 'Block Plantation' },
         { id: 2, label: 'Miyawaki' },
-        { id: 3, label: 'Fal Vatika' }
+        { id: 3, label: 'Fal Vatika' },
+        { id: 4, label: 'Individual Plantation' }
     ];
 
     return (
@@ -59,7 +60,12 @@ const Sidebar = ({
                 {isOpen && (
                     <div className="header-text-group">
                         <h1 className="logo-text">Dashboard</h1>
-                        <div className="mode-toggle-pill" onClick={() => setComparisonMode(!comparisonMode)}>
+                        <div className="mode-toggle-pill" onClick={() => {
+                            if (comparisonMode) {
+                                setActiveSide('A');
+                            }
+                            setComparisonMode(!comparisonMode);
+                        }}>
                             <span className={!comparisonMode ? 'active' : ''}>Explorer</span>
                             <span className={comparisonMode ? 'active' : ''}>Compare</span>
                         </div>
@@ -91,6 +97,7 @@ const Sidebar = ({
                     isOpen={isOpen}
                     accentColor={comparisonMode ? (activeSide === 'A' ? '#3b82f6' : '#10b981') : null}
                     regionName={activeSide === 'A' ? (sideA.selection.blockName || sideA.selection.districtName || 'Rajasthan') : (sideB.selection.blockName || sideB.selection.districtName || 'Rajasthan')}
+                    selectedDepartment={filters.department}
                     onOpenReport={() => onOpenReport(activeSide)}
                 />
 

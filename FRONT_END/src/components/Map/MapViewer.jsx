@@ -12,11 +12,16 @@ import PointLayer from './Layers/PointLayer';
 import Legend from './Legend';
 import './MapViewer.css';
 
-const MapRefCapture = ({ mapRef }) => {
+const MapRefCapture = ({ mapRef, onMapReady }) => {
     const map = useMap();
     useEffect(() => {
-        mapRef.current = map;
-    }, [map, mapRef]);
+        if (mapRef) {
+            mapRef.current = map;
+        }
+        if (onMapReady) {
+            onMapReady(map);
+        }
+    }, [map, mapRef, onMapReady]);
     return null;
 };
 
@@ -42,7 +47,8 @@ const MapViewer = ({
     comparisonMode,
     diffData,
     isDiffMode = false,
-    hideBreadcrumbs = false
+    hideBreadcrumbs = false,
+    onMapReady
 }) => {
     const mapRef = useRef(null);
     const [showBoundaries, setShowBoundaries] = useState(false);
@@ -233,7 +239,7 @@ const MapViewer = ({
                     isDiffMode={isDiffMode}
                 />
 
-                <MapRefCapture mapRef={mapRef} />
+                <MapRefCapture mapRef={mapRef} onMapReady={onMapReady} />
                 <ZoomControls />
                 <Legend
                     viewLevel={viewLevel}

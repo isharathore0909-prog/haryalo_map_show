@@ -1,26 +1,22 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../utils/prisma.js';
-import { PlantationParams, SummaryStats } from '../types/plantation.js';
 import { buildRawSqlFilters, buildIndividualRawSqlFilters } from '../utils/filterBuilder.js';
-
 /**
  * Helper to clean codes of BOM and whitespace in SQL
  */
-const clean = (col: string) => `REPLACE(${col}, CHR(65279), '')`;
-
+const clean = (col) => `REPLACE(${col}, CHR(65279), '')`;
 /**
  * Fetches stats by district
  */
-export const getDistrictStats = async (params: PlantationParams) => {
+export const getDistrictStats = async (params) => {
     const whereSql = buildRawSqlFilters(params, 'p');
     const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
     const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
     const indWhereSqlPvt = buildIndividualRawSqlFilters(params, 'ip');
-
-    return await prisma.$queryRaw`
+    return await prisma.$queryRaw `
         WITH dists AS (
             SELECT 
-                ${(Prisma as any).raw(clean('"DISTRICT_C"'))} as code,
+                ${Prisma.raw(clean('"DISTRICT_C"'))} as code,
                 "DISTRICT_N" as name
             FROM "portaldash_districtlist"
         ),
@@ -50,11 +46,10 @@ export const getDistrictStats = async (params: PlantationParams) => {
         ORDER BY d.name
     `;
 };
-
 /**
  * Fetches stats by block (robustly handles new districts like Balotra)
  */
-export const getBlockStats = async (params: PlantationParams) => {
+export const getBlockStats = async (params) => {
     const whereSql = buildRawSqlFilters(params, 'p');
     const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
     const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
@@ -62,13 +57,12 @@ export const getBlockStats = async (params: PlantationParams) => {
     const district = String(params.district || '');
     const distCode = district ? district.replace(/^08/, '').replace(/\ufeff/g, '').trim() : null;
     const longDistCode = distCode ? '08' + distCode : null;
-
-    return await prisma.$queryRaw`
+    return await prisma.$queryRaw `
         WITH blks AS (
             SELECT 
-                ${(Prisma as any).raw(clean('"block_id"'))} as code,
+                ${Prisma.raw(clean('"block_id"'))} as code,
                 "block_name" as name,
-                ${(Prisma as any).raw(clean('"District_id"'))} as dist_id
+                ${Prisma.raw(clean('"District_id"'))} as dist_id
             FROM "api_nursery_blocklist"
         ),
         indiv AS (
@@ -94,31 +88,29 @@ export const getBlockStats = async (params: PlantationParams) => {
         LEFT JOIN "api_blockplantation" p ON b.code = p."block_code_id" AND ${whereSql}
         LEFT JOIN indiv_agg i ON b.code = i.code
         WHERE 1=1
-        ${distCode ? (Prisma as any).sql`AND (b.dist_id = ${distCode} OR b.dist_id = ${longDistCode})` : (Prisma as any).empty}
+        ${distCode ? Prisma.sql `AND (b.dist_id = ${distCode} OR b.dist_id = ${longDistCode})` : Prisma.empty}
         GROUP BY b.code, b.name, i.individual_plants
         ORDER BY b.name
     `;
 };
-
 /**
  * Fetches stats by Gram Panchayat
  */
-export const getGPStats = async (params: PlantationParams) => {
+export const getGPStats = async (params) => {
     const whereSql = buildRawSqlFilters(params, 'p');
     const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
     const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
     const indWhereSqlPvt = buildIndividualRawSqlFilters(params, 'ip');
     const block = String(params.block || '');
     const blockCode = block ? block.replace(/\ufeff/g, '').trim() : null;
-
-    return await prisma.$queryRaw`
+    return await prisma.$queryRaw `
         WITH gps AS (
             SELECT 
-                ${(Prisma as any).raw(clean('g."GP_FINAL_C"'))} as code,
+                ${Prisma.raw(clean('g."GP_FINAL_C"'))} as code,
                 g."GP_FINAL_N" as name,
-                ${(Prisma as any).raw(clean('m."block_id"'))} as block_id
+                ${Prisma.raw(clean('m."block_id"'))} as block_id
             FROM "portaldash_gpfinallist" g
-            INNER JOIN "api_nursery_grampanchayatlist" m ON ${(Prisma as any).raw(clean('g."GP_FINAL_C"'))} = ${(Prisma as any).raw(clean('m."gp_id"'))}
+            INNER JOIN "api_nursery_grampanchayatlist" m ON ${Prisma.raw(clean('g."GP_FINAL_C"'))} = ${Prisma.raw(clean('m."gp_id"'))}
         ),
         indiv AS (
             SELECT "gp_code_id" as code, COUNT(*) as cnt FROM "api_plantation_bygov" ig WHERE ${indWhereSqlGov} GROUP BY "gp_code_id"
@@ -143,23 +135,21 @@ export const getGPStats = async (params: PlantationParams) => {
         LEFT JOIN "api_blockplantation" p ON g.code = p."gp_code_id" AND ${whereSql}
         LEFT JOIN indiv_agg i ON g.code = i.code
         WHERE 1=1
-        ${blockCode ? (Prisma as any).sql`AND g.block_id = ${blockCode}` : (Prisma as any).empty}
+        ${blockCode ? Prisma.sql `AND g.block_id = ${blockCode}` : Prisma.empty}
         GROUP BY g.code, g.name, i.individual_plants
         ORDER BY g.name
     `;
 };
-
 /**
  * Fetches summary statistics for cards
  */
-export const getSummaryStats = async (params: PlantationParams): Promise<any> => {
+export const getSummaryStats = async (params) => {
     const whereSql = buildRawSqlFilters(params, 'p');
     const indWhereSqlGov = buildIndividualRawSqlFilters(params, 'ig');
     const indWhereSqlNgo = buildIndividualRawSqlFilters(params, 'ing');
     const indWhereSqlPvt = buildIndividualRawSqlFilters(params, 'ip');
-
     // 1. Get Totals
-    const totals: any[] = await prisma.$queryRaw`
+    const totals = await prisma.$queryRaw `
         SELECT 
             COALESCE(SUM(CASE WHEN p."number_of_plants" ~ '^[0-9]+$' THEN CAST(p."number_of_plants" AS BIGINT) ELSE 0 END), 0) as total_plants,
             COUNT(p."id") as total_sites,
@@ -171,8 +161,7 @@ export const getSummaryStats = async (params: PlantationParams): Promise<any> =>
         FROM "api_blockplantation" p
         WHERE ${whereSql}
     `;
-
-    const indTotals: any[] = await prisma.$queryRaw`
+    const indTotals = await prisma.$queryRaw `
         WITH indiv AS (
             SELECT 1 FROM "api_plantation_bygov" ig WHERE ${indWhereSqlGov}
             UNION ALL
@@ -182,9 +171,8 @@ export const getSummaryStats = async (params: PlantationParams): Promise<any> =>
         )
         SELECT COUNT(*) as individual_plants FROM indiv
     `;
-
     // 2. Get Dept Breakdown
-    const deptData: any[] = await prisma.$queryRaw`
+    const deptData = await prisma.$queryRaw `
         SELECT d."department_name", COUNT(p."id") as count
         FROM "api_blockplantation" p
         JOIN "api_gov_department" d ON p."goverment_departmet_id" = d."id"
@@ -192,60 +180,52 @@ export const getSummaryStats = async (params: PlantationParams): Promise<any> =>
         GROUP BY d."department_name"
         ORDER BY count DESC
     `;
-
-    const by_dept: Record<string, number> = {};
+    const by_dept = {};
     deptData.forEach(d => {
         if (d.department_name) {
             by_dept[d.department_name] = Number(d.count);
         }
     });
-
     const t = totals[0] || {};
     const indCount = Number(indTotals[0]?.individual_plants || 0);
-
     return [{
-        total_plants: Number(t.total_plants || 0) + indCount,
-        total_sites: Number(t.total_sites || 0),
-        total_species: Number(t.total_species || 0),
-        verified_count: Number(t.verified_count || 0),
-        by_type: {
-            "Block": Number(t.block_plants || 0),
-            "Miyawaki": Number(t.miyawaki_plants || 0),
-            "Fal Vatika": Number(t.fal_vatika_plants || 0),
-            "Individual": indCount
-        },
-        by_dept
-    }];
+            total_plants: Number(t.total_plants || 0) + indCount,
+            total_sites: Number(t.total_sites || 0),
+            total_species: Number(t.total_species || 0),
+            verified_count: Number(t.verified_count || 0),
+            by_type: {
+                "Block": Number(t.block_plants || 0),
+                "Miyawaki": Number(t.miyawaki_plants || 0),
+                "Fal Vatika": Number(t.fal_vatika_plants || 0),
+                "Individual": indCount
+            },
+            by_dept
+        }];
 };
-
 /**
  * Calculates the difference between two sets of filters for change detection
  */
-export const getComparisonDiff = async (paramsA: PlantationParams, paramsB: PlantationParams) => {
+export const getComparisonDiff = async (paramsA, paramsB) => {
     const [statsA] = await getSummaryStats(paramsA);
     const [statsB] = await getSummaryStats(paramsB);
-
-    const calculateDelta = (valB: number, valA: number) => {
+    const calculateDelta = (valB, valA) => {
         const delta = valB - valA;
         const percent = valA > 0 ? (delta / valA) * 100 : 0;
         return { value: delta, percent: Number(percent.toFixed(2)) };
     };
-
     const diff = {
         total_plants: calculateDelta(statsB.total_plants, statsA.total_plants),
         total_sites: calculateDelta(statsB.total_sites, statsA.total_sites),
         total_species: calculateDelta(statsB.total_species, statsA.total_species),
         verified_count: calculateDelta(statsB.verified_count, statsA.verified_count),
-        by_type: {} as any,
-        by_dept: {} as any
+        by_type: {},
+        by_dept: {}
     };
-
     // Calculate deltas for types
     const allTypes = new Set([...Object.keys(statsA.by_type), ...Object.keys(statsB.by_type)]);
     allTypes.forEach(type => {
         diff.by_type[type] = calculateDelta(statsB.by_type[type] || 0, statsA.by_type[type] || 0);
     });
-
     // Calculate deltas for departments (top 10 by change)
     const allDepts = new Set([...Object.keys(statsA.by_dept), ...Object.keys(statsB.by_dept)]);
     allDepts.forEach(dept => {
@@ -254,25 +234,23 @@ export const getComparisonDiff = async (paramsA: PlantationParams, paramsB: Plan
             diff.by_dept[dept] = calculateDelta(statsB.by_dept[dept] || 0, statsA.by_dept[dept] || 0);
         }
     });
-
     // Regional Diff for the Map
-    let regionalA: any[] = [];
-    let regionalB: any[] = [];
-
+    let regionalA = [];
+    let regionalB = [];
     if ((paramsB.blocks && paramsB.blocks.length > 0) || paramsB.block) {
-        regionalA = await getGPStats(paramsA) as any[];
-        regionalB = await getGPStats(paramsB) as any[];
-    } else if ((paramsB.districts && paramsB.districts.length > 0) || paramsB.district) {
-        regionalA = await getBlockStats(paramsA) as any[];
-        regionalB = await getBlockStats(paramsB) as any[];
-    } else {
-        regionalA = await getDistrictStats(paramsA) as any[];
-        regionalB = await getDistrictStats(paramsB) as any[];
+        regionalA = await getGPStats(paramsA);
+        regionalB = await getGPStats(paramsB);
     }
-
-    const regionalDiff: Record<string, any> = {};
+    else if ((paramsB.districts && paramsB.districts.length > 0) || paramsB.district) {
+        regionalA = await getBlockStats(paramsA);
+        regionalB = await getBlockStats(paramsB);
+    }
+    else {
+        regionalA = await getDistrictStats(paramsA);
+        regionalB = await getDistrictStats(paramsB);
+    }
+    const regionalDiff = {};
     const mapRegA = new Map(regionalA.map(r => [String(r.code), r]));
-
     regionalB.forEach(rB => {
         const code = String(rB.code);
         const rA = mapRegA.get(code) || { total_plants: 0, site_count: 0 };
@@ -281,32 +259,26 @@ export const getComparisonDiff = async (paramsA: PlantationParams, paramsB: Plan
             site_count: calculateDelta(Number(rB.site_count), Number(rA.site_count))
         };
     });
-
     // Point Deltas (New vs Lost)
-    let pointDeltas = { newPlantations: [] as any[], lostPlantations: [] as any[] };
-
+    let pointDeltas = { newPlantations: [], lostPlantations: [] };
     // Only fetch individual points if we are scoped to at least a district or block to avoid massive payloads
     if (paramsB.district || paramsB.districts?.length || paramsB.block || paramsB.blocks?.length) {
         const whereA = buildRawSqlFilters(paramsA, 'p');
         const whereB = buildRawSqlFilters(paramsB, 'p');
-
-        const fetchPoints = async (where: any) => {
-            return await prisma.$queryRaw`
+        const fetchPoints = async (where) => {
+            return await prisma.$queryRaw `
                 SELECT id, location_lat, location_long, plantation_type_id as "plantation_type"
                 FROM "api_blockplantation" p
                 WHERE ${where}
                 LIMIT 2000
-            ` as any[];
+            `;
         };
-
         const [ptsA, ptsB] = await Promise.all([fetchPoints(whereA), fetchPoints(whereB)]);
         const mapPtsA = new Map(ptsA.map(p => [String(p.id), p]));
         const mapPtsB = new Map(ptsB.map(p => [String(p.id), p]));
-
         pointDeltas.newPlantations = ptsB.filter(p => !mapPtsA.has(String(p.id)));
         pointDeltas.lostPlantations = ptsA.filter(p => !mapPtsB.has(String(p.id)));
     }
-
     return {
         sideA: statsA,
         sideB: statsB,

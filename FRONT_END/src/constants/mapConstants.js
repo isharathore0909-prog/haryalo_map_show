@@ -1,13 +1,15 @@
 export const PLANTATION_TYPES = {
     BLOCK_PLANTATION: 1,
     MIYAWAKI: 2,
-    FAL_VATIKA: 3
+    FAL_VATIKA: 3,
+    INDIVIDUAL: 4
 };
 
 export const TYPE_COLORS = {
     1: '#1c6f7a', // Evergreen (Block)
     2: '#b48923ff', // Amber (Miyawaki)
     3: '#6a1f5b', // Bark (Fal Vatika)
+    4: '#f97316', // Orange (Individual)
     'default': '#756bb1'
 };
 

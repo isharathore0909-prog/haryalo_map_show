@@ -1,15 +1,12 @@
 import prisma from '../utils/prisma.js';
-import { PlantationParams } from '../types/plantation.js';
 import { getCached } from '../utils/cache.js';
 import { buildPrismaWhere } from '../utils/filterBuilder.js';
-
 // Re-export stats functionality for backward compatibility or direct use
 export * from './statsService.js';
-
 /**
  * Fetches filtered plantation points for map display
  */
-export const getFilteredPlantations = async (params: PlantationParams) => {
+export const getFilteredPlantations = async (params) => {
     const cacheKey = `plantations:${JSON.stringify(params)}`;
     return await getCached(cacheKey, async () => {
         const where = buildPrismaWhere(params);
@@ -45,14 +42,12 @@ export const getFilteredPlantations = async (params: PlantationParams) => {
         });
     });
 };
-
 /**
  * Metadata lists with caching
  */
-
 export const getSpeciesList = async () => {
     return await getCached('species', async () => {
-        const species: any[] = await prisma.$queryRaw`
+        const species = await prisma.$queryRaw `
             SELECT DISTINCT TRIM("planta_name_text") as name
             FROM "api_blockplantation"
             WHERE "planta_name_text" IS NOT NULL
@@ -63,7 +58,6 @@ export const getSpeciesList = async () => {
             .map(s => ({ id: s.name, label: s.name }));
     });
 };
-
 export const getDepartmentList = async () => {
     return await getCached('departments', async () => {
         return await prisma.api_gov_department.findMany({
@@ -72,7 +66,6 @@ export const getDepartmentList = async () => {
         });
     });
 };
-
 export const getLandOwnershipList = async () => {
     return await getCached('land_ownership', async () => {
         return await prisma.api_land_ownershipby_gov_ngo.findMany({

@@ -120,7 +120,8 @@ const PointLayer = ({ viewLevel, blockId, filters, setSelectionInfo, diffData, i
                                         { label: 'Plants', value: parseInt(p.number_of_plants).toLocaleString() },
                                         { label: 'Gram Panchayat', value: (p.gp_name || p.gp_code)?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) },
                                         { label: 'Block', value: p.block_name },
-                                        { label: 'District', value: p.district_name }
+                                        { label: 'District', value: p.district_name },
+                                        { label: 'Department', value: p.department_name || 'Others' }
                                     ]
                                 });
                             }
